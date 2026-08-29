@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日均成本消费决策计算器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       CSS 变量 & 主题系统
+       ============================================================ */
+    :root {
+      /* 浅色主题 */
+      --bg:             #FAF7F2;
+      --bg-card:        #FFFFFF;
+      --bg-card-alt:    #F7F3EC;
+      --bg-input:       #FAF8F4;
+      --text:           #2D2A26;
+      --text-secondary: #6B6560;
+      --text-muted:     #9A938A;
+      --border:         #E8E3DA;
+      --border-focus:   #C4A15A;
+      --accent:         #B8860B;
+      --accent-hover:   #9A6F0A;
+      --accent-light:   #F5E6C8;
+      --accent-bg:      #FCF6EA;
+      --success:        #5B8C5A;
+      --success-bg:     #E8F5E8;
+      --success-border: #B8D8B8;
+      --danger:         #C4554D;
+      --danger-hover:   #A8443D;
+      --danger-bg:      #FDE8E8;
+      --danger-border:  #F0C0C0;
+      --info:           #4A7BA7;
+      --info-bg:        #E8F0F8;
+      --info-border:    #C0D4E8;
+      --shadow-sm:      0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md:      0 2px 12px rgba(0,0,0,0.06);
+      --shadow-lg:      0 4px 24px rgba(0,0,0,0.08);
+      --radius-sm:      8px;
+      --radius-md:      12px;
+      --radius-lg:      16px;
+      --font-heading:   'Noto Serif SC', 'SimSun', 'STSong', serif;
+      --font-body:      'IBM Plex Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --font-mono:      'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+      --transition:     0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --max-width:      680px;
+    }
+
+    /* 暗色主题 */
+    [data-theme="dark"] {
+      --bg:             #1E1B18;
+      --bg-card:        #2A2520;
+      --bg-card-alt:    #322D27;
+      --bg-input:       #38332D;
+      --text:           #E8E0D5;
+      --text-secondary: #A0988E;
+      --text-muted:     #7A7268;
+      --border:         #3D3832;
+      --border-focus:   #D4A853;
+      --accent:         #D4A853;
+      --accent-hover:   #E8C06A;
+      --accent-light:   #3D3528;
+      --accent-bg:      #332D20;
+      --success:        #7CB87B;
+      --success-bg:     #2A3528;
+      --success-border: #4A6A48;
+      --danger:         #D4706A;
+      --danger-hover:   #E88580;
+      --danger-bg:      #352828;
+      --danger-border:  #5A4040;
+      --info:           #6A9BC5;
+      --info-bg:        #283035;
+      --info-border:    #3A505A;
+      --shadow-sm:      0 1px 3px rgba(0,0,0,0.15);
+      --shadow-md:      0 2px 12px rgba(0,0,0,0.25);
+      --shadow-lg:      0 4px 24px rgba(0,0,0,0.35);
+    }
+
+    /* ============================================================
+       基础重置 & 排版
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .app {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+    }
+
+    /* ============================================================
+       头部
+       ============================================================ */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .app-title {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all var(--transition);
+    }
+    .btn-icon:hover {
+      background: var(--bg-card-alt);
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+    .btn-icon:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ============================================================
+       卡片
+       ============================================================ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+    }
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ============================================================
+       表单控件
+       ============================================================ */
+    .form-row {
+      margin-bottom: 14px;
+    }
+    .form-row:last-child { margin-bottom: 0; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+      letter-spacing: 0.01em;
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 15px;
+      font-family: var(--font-body);
+      color: var(--text);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-input[type="number"] { font-family: var(--font-mono); }
+
+    .form-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6560' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    .form-hint {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .form-group-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ============================================================
+       按钮
+       ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-body);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #FFF;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 20px;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-xs { padding: 4px 10px; font-size: 12px; }
+
+    .btn-success { background: var(--success); color: #FFF; }
+    .btn-success:hover { filter: brightness(1.1); }
+
+    .btn-danger { background: var(--danger); color: #FFF; }
+    .btn-danger:hover { background: var(--danger-hover); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-outline:hover {
+      background: var(--bg-card-alt);
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    /* ============================================================
+       池子总览面板
+       ============================================================ */
+    .pool-panel {
+      background: var(--accent-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-top: 14px;
+    }
+
+    .pool-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .pool-stat-label { color: var(--text-secondary); }
+    .pool-stat-value { font-weight: 600; color: var(--text); }
+    .pool-stat-value.loss { color: var(--danger); }
+    .pool-stat-value.avail { color: var(--success); }
+    .pool-stat-value.warn { color: var(--accent); }
+
+    /* 池子进度条 */
+    .pool-gauge {
+      margin-top: 12px;
+    }
+    .pool-gauge-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+    .pool-gauge-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .pool-gauge-used   { background: var(--info); }
+    .pool-gauge-loss   { background: var(--danger); opacity: 0.5; }
+    .pool-gauge-avail  { background: var(--success); opacity: 0.3; }
+    .pool-gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ============================================================
+       物品列表
+       ============================================================ */
+    .item-list { margin-top: 12px; }
+
+    .item-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    .item-row:last-child { border-bottom: none; }
+
+    .item-info { flex: 1; min-width: 200px; }
+    .item-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .item-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.6;
+    }
+    .item-meta strong { color: var(--text); }
+
+    .item-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .item-progress {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .item-progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+    .item-progress-fill.green { background: var(--success); }
+    .item-progress-fill.amber { background: var(--accent); }
+    .item-progress-fill.red   { background: var(--danger); }
+
+    /* ============================================================
+       决策结果
+       ============================================================ */
+    .result-block {
+      margin-top: 16px;
+      padding: 16px 18px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      line-height: 1.8;
+      border: 1px solid;
+    }
+    .result-pass {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success);
+    }
+    .result-fail {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger);
+    }
+    .result-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .result-detail { font-size: 13px; color: var(--text-secondary); }
+
+    /* ============================================================
+       Toast 通知
+       ============================================================ */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      font-size: 13px;
+      color: var(--text);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
+      pointer-events: auto;
+      max-width: 360px;
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.info    { border-left: 3px solid var(--info); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(40px); }
+    }
+
+    /* ============================================================
+       Modal 弹窗
+       ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+    }
+    .modal-title {
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .modal-body { font-size: 14px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 18px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ============================================================
+       空状态
+       ============================================================ */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .empty-state-icon { font-size: 36px; margin-bottom: 8px; }
+
+    /* ============================================================
+       响应式
+       ============================================================ */
+    @media (max-width: 480px) {
+      .app { padding: 16px 10px 32px; }
+      .card { padding: 18px 14px; }
+      .pool-stats { grid-template-columns: 1fr; }
+      .form-group-grid { grid-template-columns: 1fr; }
+      .item-row { flex-direction: column; }
+      .item-actions { width: 100%; justify-content: flex-start; }
+      .app-title { font-size: 19px; }
+    }
+
+    /* ============================================================
+       打印样式
+       ============================================================ */
+    @media print {
+      .toolbar, .btn-icon, .btn { display: none; }
+      .card { box-shadow: none; border: 1px solid #DDD; break-inside: avoid; }
+      body { background: #FFF; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- ========== 头部 ========== -->
+    <header class="app-header">
+      <h1 class="app-title">日均成本消费决策计算器</h1>
+      <nav class="toolbar" aria-label="工具栏">
+        <button class="btn-icon" id="btnThemeToggle" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
+        <button class="btn-icon" id="btnExport" title="导出数据" aria-label="导出数据">📥</button>
+        <button class="btn-icon" id="btnImport" title="导入数据" aria-label="导入数据">📤</button>
+        <button class="btn-icon" id="btnUndo" title="撤销上一步" aria-label="撤销">↩</button>
+      </nav>
+    </header>
+
+    <!-- ========== 基础设置 ========== -->
+    <section class="card" aria-labelledby="settingsTitle">
+      <div class="card-header" id="settingsTitle">⚙️ 基础设置</div>
+      <div class="form-group-grid">
+        <div class="form-row">
+          <label class="form-label" for="monthIncome">税后月收入（元）</label>
+          <input class="form-input" type="number" id="monthIncome" value="8000" min="0" step="100" autocomplete="off">
+          <span class="form-hint">用于自动计算耐用品池子上限，月度封顶 2100 元</span>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="poolMax">自定义池子上限（元/天）</label>
+          <input class="form-input" type="number" id="poolMax" min="0" step="0.5" placeholder="留空自动计算" autocomplete="off">
+          <span class="form-hint">留空则按收入模型自动计算</span>
+        </div>
+      </div>
+      <div class="form-hint" style="margin-top:8px;">
+        ⚠ 只有达到预定年限自然退役才会释放额度；提前退役产生折损永久扣减，不会自动恢复
+      </div>
+    </section>
+
+    <!-- ========== 池子总览 ========== -->
+    <section class="card" aria-labelledby="poolTitle">
+      <div class="card-header" id="poolTitle">📊 池子总览</div>
+      <div id="poolSummaryWrap" class="pool-panel">
+        <!-- 动态渲染 -->
+      </div>
+    </section>
+
+    <!-- ========== 物品管理 ========== -->
+    <section class="card" aria-labelledby="itemTitle">
+      <div class="card-header" id="itemTitle">📦 物品管理</div>
+      <div class="form-group-grid">
+        <div class="form-row">
+          <label class="form-label" for="itemName">物品名称</label>
+          <input class="form-input" type="text" id="itemName" placeholder="例如：手机" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="itemPrice">购买价格（元）</label>
+          <input class="form-input" type="number" id="itemPrice" min="1" placeholder="4200" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="itemYear">预估服役时长（年，0.5=半年，最小 0.5）</label>
+        <input class="form-input" type="number" id="itemYear" min="0.5" step="0.5" value="1" placeholder="1 代表 1 年，3 代表 3 年" autocomplete="off">
+        <span class="form-hint">0.5 = 半年、1 = 1 年、2 = 2 年、3 = 3 年；内部自动换算为天数（1 年 = 364 天）</span>
+      </div>
+      <button class="btn btn-primary" id="btnAddItem">添加到池子</button>
+      <div id="itemListWrap" class="item-list">
+        <!-- 动态渲染 -->
+      </div>
+    </section>
+
+    <!-- ========== 购买决策 ========== -->
+    <section class="card" aria-labelledby="decisionTitle">
+      <div class="card-header" id="decisionTitle">🧮 购买决策计算</div>
+      <div class="form-group-grid">
+        <div class="form-row">
+          <label class="form-label" for="price">商品总价（含配件，元）</label>
+          <input class="form-input" type="number" id="price" min="0" placeholder="例如 4200" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="buyYear">预估服役时长（年，最小 0.5）</label>
+          <input class="form-input" type="number" id="buyYear" min="0.5" step="0.5" value="1" placeholder="3 代表 3 年" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="buyType">购买类型</label>
+        <select class="form-select" id="buyType">
+          <option value="replace">置换更新（旧物功能完好，换新）</option>
+          <option value="new">首次刚需新增（旧物报废必须买）</option>
+        </select>
+        <span class="form-hint">外观磨损、手感变差不计为损坏，一律选「置换更新」</span>
+      </div>
+      <button class="btn btn-primary" id="btnCalc">开始计算能否购买</button>
+      <div id="output">
+        <!-- 动态渲染 -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast 容器 -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- 隐藏的文件导入 input -->
+  <input type="file" id="importFileInput" accept=".json" style="display:none" aria-hidden="true">
+
+  <script>
+  /* ============================================================
+     配置常量
+     ============================================================ */
+  const CONFIG = Object.freeze({
+    MONTH_CEILING:         2100,   // 月度耐用品预算封顶（元）
+    REPLACE_THRESHOLD_RATIO: 0.22, // 置换阈值占原始池子的比例
+    REPLACE_THRESHOLD_MIN:   0.1,  // 置换阈值下限（元/天）
+    DAYS_PER_YEAR:           364,  // 年换算天数
+    DAYS_PER_MONTH:          30,   // 月换算天数（用于池子上限）
+    STORAGE_KEY_ITEMS:       'poolItemList',
+    STORAGE_KEY_LOSS:        'totalLossDaily',
+    MAX_UNDO_STACK:          20,   // 撤销栈最大深度
+  });
+
+  /* ============================================================
+     状态管理
+     ============================================================ */
+  const state = {
+    items: [],
+    totalLoss: 0,
+    undoStack: [],
+  };
+
+  // 从 localStorage 加载，容错处理
+  function loadState() {
+    try {
+      const rawItems = localStorage.getItem(CONFIG.STORAGE_KEY_ITEMS);
+      state.items = rawItems ? JSON.parse(rawItems) : [];
+      if (!Array.isArray(state.items)) state.items = [];
+
+      const rawLoss = localStorage.getItem(CONFIG.STORAGE_KEY_LOSS);
+      state.totalLoss = rawLoss ? Number(rawLoss) : 0;
+      if (isNaN(state.totalLoss) || state.totalLoss < 0) state.totalLoss = 0;
+    } catch (e) {
+      console.warn('加载本地数据失败，使用默认空状态', e);
+      state.items = [];
+      state.totalLoss = 0;
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(CONFIG.STORAGE_KEY_ITEMS, JSON.stringify(state.items));
+      localStorage.setItem(CONFIG.STORAGE_KEY_LOSS, state.totalLoss.toString());
+    } catch (e) {
+      toast('本地存储空间不足，请清理浏览器数据', 'error');
+    }
+  }
+
+  // 撤销栈
+  function pushUndo(snapshot) {
+    state.undoStack.push(snapshot);
+    if (state.undoStack.length > CONFIG.MAX_UNDO_STACK) {
+      state.undoStack.shift();
+    }
+  }
+
+  function takeSnapshot() {
+    return {
+      items: JSON.parse(JSON.stringify(state.items)),
+      totalLoss: state.totalLoss,
+    };
+  }
+
+  function undo() {
+    if (state.undoStack.length === 0) {
+      toast('没有可撤销的操作', 'info');
+      return;
+    }
+    const snapshot = state.undoStack.pop();
+    state.items = snapshot.items;
+    state.totalLoss = snapshot.totalLoss;
+    saveState();
+    renderAll();
+    toast('已撤销上一步操作', 'success');
+  }
+
+  /* ============================================================
+     DOM 引用缓存
+     ============================================================ */
+  const $ = (sel) => document.querySelector(sel);
+  const $id = (id) => document.getElementById(id);
+
+  const dom = {
+    monthIncome: $id('monthIncome'),
+    poolMax:     $id('poolMax'),
+    itemName:    $id('itemName'),
+    itemPrice:   $id('itemPrice'),
+    itemYear:    $id('itemYear'),
+    price:       $id('price'),
+    buyYear:     $id('buyYear'),
+    buyType:     $id('buyType'),
+    poolSummary: $id('poolSummaryWrap'),
+    itemList:    $id('itemListWrap'),
+    output:      $id('output'),
+    toast:       $id('toastContainer'),
+    importFile:  $id('importFileInput'),
+    themeToggle: $id('btnThemeToggle'),
+  };
+
+  /* ============================================================
+     工具函数
+     ============================================================ */
+  function fmt(n, decimals = 2) {
+    return Number(n).toFixed(decimals);
+  }
+
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function safeNum(val, fallback = 0) {
+    const n = Number(val);
+    return (isNaN(n) || !isFinite(n)) ? fallback : n;
+  }
+
+  function daysFromYears(years) {
+    return Math.round(Math.max(0.5, years) * CONFIG.DAYS_PER_YEAR);
+  }
+
+  // 收入 → 耐用品占比（平滑插值）
+  function getRateByIncome(monthIncome) {
+    const mi = Math.max(0, monthIncome);
+    if (mi <= 3000)       return 0.04;
+    if (mi <= 7000)       return 0.04 + ((mi - 3000) / 4000) * 0.03; // 4%→7%
+    if (mi <= 12000)      return 0.08;
+    if (mi <= 20000)      return 0.10;
+    if (mi <= 35000)      return 0.09;
+    return 0.07;
+  }
+
+  /* ============================================================
+     核心计算
+     ============================================================ */
+  function getRawPoolMax() {
+    const monthIncome = safeNum(dom.monthIncome.value, 0);
+    const customMax = dom.poolMax.value.trim();
+
+    if (customMax !== '' && !isNaN(Number(customMax)) && Number(customMax) >= 0) {
+      return Number(customMax);
+    }
+
+    const rate = getRateByIncome(monthIncome);
+    const monthBudget = Math.min(monthIncome * rate, CONFIG.MONTH_CEILING);
+    return monthBudget / CONFIG.DAYS_PER_MONTH;
+  }
+
+  function getEffectivePoolMax() {
+    return Math.max(0, getRawPoolMax() - state.totalLoss);
+  }
+
+  function getCurrentUsage() {
+    let sum = 0;
+    state.items.forEach(it => sum += (it.daily || 0));
+    return sum;
+  }
+
+  function getReplaceThreshold() {
+    return Math.max(getRawPoolMax() * CONFIG.REPLACE_THRESHOLD_RATIO, CONFIG.REPLACE_THRESHOLD_MIN);
+  }
+
+  /* ============================================================
+     物品操作
+     ============================================================ */
+  function addItem(name, price, year) {
+    if (!name || price <= 0 || year < 0.5) {
+      toast('请填写有效的物品名称、价格和服役时长（最小 0.5 年）', 'error');
+      return false;
+    }
+
+    pushUndo(takeSnapshot());
+
+    const totalDays = daysFromYears(year);
+    const daily = price / totalDays;
+    const now = Date.now();
+
+    state.items.push({
+      name,
+      price,
+      year,
+      totalDays,
+      daily,
+      createTs: now,
+      endTs: now + totalDays * 24 * 60 * 60 * 1000,
+    });
+
+    saveState();
+    renderAll();
+    toast(`已添加「${name}」日均 ${fmt(daily)} 元/天`, 'success');
+    return true;
+  }
+
+  function naturalRetire(idx) {
+    const item = state.items[idx];
+    if (!item) return;
+
+    pushUndo(takeSnapshot());
+    const daily = item.daily;
+    state.items.splice(idx, 1);
+    saveState();
+    renderAll();
+    toast(`「${item.name}」到期退役，释放 ${fmt(daily)} 元/天`, 'success');
+  }
+
+  function earlyRetire(idx) {
+    const item = state.items[idx];
+    if (!item) return;
+
+    const now = Date.now();
+    const totalMs = item.endTs - item.createTs;
+    const passedMs = Math.min(now - item.createTs, totalMs);
+    const consumeRatio = clamp(passedMs / totalMs, 0, 1);
+    const remainRatio = 1 - consumeRatio;
+
+    if (remainRatio <= 0) {
+      naturalRetire(idx);
+      return;
+    }
+
+    const lostDaily = item.daily * remainRatio;
+    const releaseDaily = item.daily * consumeRatio;
+
+    const msg = [
+      `⚠ 提前退役折损确认`,
+      ``,
+      `物品：${item.name}`,
+      `原占池子：${fmt(item.daily)} 元/天`,
+      `可释放额度：${fmt(releaseDaily)} 元/天`,
+      `本次永久折损：${fmt(lostDaily)} 元/天`,
+      ``,
+      `折损后有效池子：${fmt(getEffectivePoolMax() - lostDaily)} 元/天`,
+      ``,
+      `确认执行提前退役？（折损不可撤销）`,
+    ].join('\n');
+
+    showModal('提前退役确认', msg, [
+      {
+        text: '取消',
+        cls: 'btn-outline',
+        action: () => closeModal(),
+      },
+      {
+        text: '确认退役',
+        cls: 'btn-danger',
+        action: () => {
+          pushUndo(takeSnapshot());
+          state.totalLoss += lostDaily;
+          state.items.splice(idx, 1);
+          saveState();
+          renderAll();
+          toast(`「${item.name}」已提前退役，折损 ${fmt(lostDaily)} 元/天`, 'info');
+          closeModal();
+        },
+      },
+    ]);
+  }
+
+  function resetTotalLoss() {
+    showModal('重置累计折损', '确认将全部累计提前退役折损清零？有效池子将恢复到原始上限。此操作不可撤销。', [
+      {
+        text: '取消',
+        cls: 'btn-outline',
+        action: () => closeModal(),
+      },
+      {
+        text: '确认重置',
+        cls: 'btn-danger',
+        action: () => {
+          pushUndo(takeSnapshot());
+          state.totalLoss = 0;
+          saveState();
+          renderAll();
+          toast('累计折损已全部重置', 'success');
+          closeModal();
+        },
+      },
+    ]);
+  }
+
+  /* ============================================================
+     购买决策计算
+     ============================================================ */
+  function calcDecision() {
+    const price = safeNum(dom.price.value);
+    const buyYear = safeNum(dom.buyYear.value);
+    const buyType = dom.buyType.value;
+
+    if (price <= 0 || buyYear < 0.5) {
+      dom.output.innerHTML = renderResultBlock(false, ['请填写有效的商品价格与服役时长（最小 0.5 年）']);
+      return;
+    }
+
+    const existTotal = getCurrentUsage();
+    const effectivePoolMax = getEffectivePoolMax();
+    const rawPoolMax = getRawPoolMax();
+    const useDays = daysFromYears(buyYear);
+    const itemDaily = price / useDays;
+    const sumAfter = existTotal + itemDaily;
+    const threshold = getReplaceThreshold();
+
+    const lines = [];
+    let canBuy = true;
+
+    lines.push(`原始池子上限：${fmt(rawPoolMax)} 元/天`);
+    lines.push(`累计折损：${fmt(state.totalLoss)} 元/天`);
+    lines.push(`有效池子上限：${fmt(effectivePoolMax)} 元/天`);
+    lines.push(`新商品日均成本：${fmt(itemDaily)} 元/天（${buyYear} 年 / ${useDays} 天）`);
+    lines.push(`现有物品合计：${fmt(existTotal)} 元/天`);
+    lines.push(`购入后合计：${fmt(sumAfter)} 元/天`);
+
+    if (buyType === 'replace') {
+      lines.push(`置换阈值：${fmt(threshold)} 元/天（原始池子 22%，最低 0.1）`);
+      if (itemDaily > threshold) {
+        canBuy = false;
+        lines.push('❌ 不满足置换阈值条件');
+      } else {
+        lines.push('✅ 满足置换阈值条件');
+      }
+    } else {
+      lines.push('✅ 刚需新增，跳过置换阈值校验');
+    }
+
+    if (sumAfter > effectivePoolMax) {
+      canBuy = false;
+      lines.push(`❌ 超出有效池子 ${fmt(effectivePoolMax)} 元/天（超出 ${fmt(sumAfter - effectivePoolMax)} 元/天）`);
+    } else {
+      lines.push('✅ 有效池子额度足够');
+    }
+
+    dom.output.innerHTML = renderResultBlock(canBuy, lines);
+  }
+
+  function renderResultBlock(passed, lines) {
+    const cls = passed ? 'result-pass' : 'result-fail';
+    const icon = passed ? '✅' : '❌';
+    const title = passed ? '可以购买' : '不建议购买';
+    return `
+      <div class="result-block ${cls}">
+        <div class="result-title">${icon} 结论：${title}</div>
+        <div class="result-detail">${lines.join('<br>')}</div>
+      </div>`;
+  }
+
+  /* ============================================================
+     渲染
+     ============================================================ */
+  function renderPoolSummary() {
+    const rawPoolMax = getRawPoolMax();
+    const effectivePoolMax = getEffectivePoolMax();
+    const usage = getCurrentUsage();
+    const remain = effectivePoolMax - usage;
+
+    // 进度条比例
+    const total = rawPoolMax || 1;
+    const lossPct = clamp((state.totalLoss / total) * 100, 0, 100);
+    const usedPct = clamp((usage / total) * 100, 0, 100);
+    const availPct = clamp(((effectivePoolMax - usage) / total) * 100, 0, 100);
+
+    dom.poolSummary.innerHTML = `
+      <div class="pool-stats">
+        <div><span class="pool-stat-label">原始池子总额</span></div>
+        <div><span class="pool-stat-value">${fmt(rawPoolMax)} 元/天</span></div>
+        <div><span class="pool-stat-label">累计提前退役折损</span></div>
+        <div><span class="pool-stat-value loss">${fmt(state.totalLoss)} 元/天</span></div>
+        <div><span class="pool-stat-label">扣折损后有效池子</span></div>
+        <div><span class="pool-stat-value">${fmt(effectivePoolMax)} 元/天</span></div>
+        <div><span class="pool-stat-label">当前物品实际占用</span></div>
+        <div><span class="pool-stat-value ${usage > effectivePoolMax * 0.85 ? 'warn' : ''}">${fmt(usage)} 元/天</span></div>
+        <div><span class="pool-stat-label">剩余可用额度</span></div>
+        <div><span class="pool-stat-value ${remain < 0 ? 'loss' : 'avail'}">${fmt(remain)} 元/天</span></div>
+      </div>
+      <div class="pool-gauge">
+        <div class="pool-gauge-bar">
+          <div class="pool-gauge-fill pool-gauge-used" style="width:${usedPct}%"></div>
+          <div class="pool-gauge-fill pool-gauge-loss" style="width:${lossPct}%"></div>
+          <div class="pool-gauge-fill pool-gauge-avail" style="width:${availPct}%"></div>
+        </div>
+        <div class="pool-gauge-labels">
+          <span>占用 ${fmt(usedPct, 1)}%</span>
+          <span>折损 ${fmt(lossPct, 1)}%</span>
+          <span>可用 ${fmt(availPct, 1)}%</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn btn-sm btn-outline" onclick="resetTotalLoss()">重置累计折损</button>
+      </div>
+    `;
+  }
+
+  function renderItemList() {
+    const wrap = dom.itemList;
+    if (state.items.length === 0) {
+      wrap.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div>暂无物品，添加你的第一件耐用品吧</div>
+        </div>`;
+      return;
+    }
+
+    let html = '';
+    const now = Date.now();
+
+    state.items.forEach((it, idx) => {
+      const remainMs = Math.max(0, it.endTs - now);
+      const remainDays = Math.ceil(remainMs / (1000 * 60 * 60 * 24));
+      const totalMs = it.endTs - it.createTs;
+      const elapsedRatio = clamp(1 - remainMs / totalMs, 0, 1);
+      const elapsedPct = elapsedRatio * 100;
+
+      let barColor = 'green';
+      if (elapsedRatio > 0.85) barColor = 'red';
+      else if (elapsedRatio > 0.6) barColor = 'amber';
+
+      html += `
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(it.name)}</div>
+            <div class="item-meta">
+              ${it.price} 元 ｜ 预估 ${it.year} 年（${it.totalDays} 天）｜ 日均 <strong>${fmt(it.daily)}</strong> 元
+            </div>
+            <div class="item-meta">
+              录入：${fmtDate(it.createTs)} ｜ 预期退役：${fmtDate(it.endTs)} ｜ 剩余 <strong>${remainDays}</strong> 天
+            </div>
+            <div class="item-progress">
+              <div class="item-progress-fill ${barColor}" style="width:${elapsedPct}%"></div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="btn btn-sm btn-success" onclick="naturalRetire(${idx})">到期退役</button>
+            <button class="btn btn-sm btn-danger" onclick="earlyRetire(${idx})">提前退役</button>
+          </div>
+        </div>`;
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  function renderAll() {
+    renderPoolSummary();
+    renderItemList();
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function fmtDate(ts) {
+    return new Date(ts).toLocaleDateString('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+  }
+
+  /* ============================================================
+     数据导入导出
+     ============================================================ */
+  function exportData() {
+    const data = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      items: state.items,
+      totalLoss: state.totalLoss,
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `消费池数据_${fmtDate(Date.now()).replace(/\//g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('数据已导出', 'success');
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.items || !Array.isArray(data.items)) {
+          throw new Error('数据格式无效');
+        }
+
+        showModal('导入确认', `即将导入 ${data.items.length} 件物品和累计折损 ${fmt(data.totalLoss || 0)} 元/天。当前数据将被覆盖，确认继续？`, [
+          {
+            text: '取消',
+            cls: 'btn-outline',
+            action: () => closeModal(),
+          },
+          {
+            text: '确认导入',
+            cls: 'btn-primary',
+            action: () => {
+              pushUndo(takeSnapshot());
+              state.items = data.items;
+              state.totalLoss = safeNum(data.totalLoss, 0);
+              saveState();
+              renderAll();
+              toast(`已导入 ${data.items.length} 件物品`, 'success');
+              closeModal();
+            },
+          },
+        ]);
+      } catch (err) {
+        toast('文件格式无效，请选择正确的 JSON 文件', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ============================================================
+     Modal 弹窗系统
+     ============================================================ */
+  let modalResolve = null;
+
+  function showModal(title, body, buttons) {
+    // 移除已有 modal
+    const existing = document.querySelector('.modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const btnHtml = buttons.map((b, i) =>
+      `<button class="btn btn-sm ${b.cls}" data-modal-action="${i}">${b.text}</button>`
+    ).join('');
+
+    overlay.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-title" id="modalTitle">${escapeHtml(title)}</div>
+        <div class="modal-body">${body.replace(/\n/g, '<br>')}</div>
+        <div class="modal-actions">${btnHtml}</div>
+      </div>`;
+
+    overlay.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-modal-action]');
+      if (btn) {
+        const idx = parseInt(btn.dataset.modalAction);
+        buttons[idx].action();
+      }
+    });
+
+    // 点击遮罩关闭
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    // ESC 关闭
+    const onKey = (e) => {
+      if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', onKey); }
+    };
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(overlay);
+  }
+
+  function closeModal() {
+    const overlay = document.querySelector('.modal-overlay');
+    if (overlay) overlay.remove();
+  }
+
+  /* ============================================================
+     Toast 通知
+     ============================================================ */
+  function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    dom.toast.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  /* ============================================================
+     主题切换
+     ============================================================ */
+  function initTheme() {
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    applyTheme(theme);
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    dom.themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    dom.themeToggle.setAttribute('aria-label', theme === 'dark' ? '切换浅色模式' : '切换暗色模式');
+    localStorage.setItem('theme', theme);
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  /* ============================================================
+     事件绑定（事件委托 + 直接绑定）
+     ============================================================ */
+  function bindEvents() {
+    // 主题切换
+    dom.themeToggle.addEventListener('click', toggleTheme);
+
+    // 基础设置变化 → 刷新池子总览
+    dom.monthIncome.addEventListener('input', debounce(renderPoolSummary, 200));
+    dom.poolMax.addEventListener('input', debounce(renderPoolSummary, 200));
+
+    // 添加物品
+    $id('btnAddItem').addEventListener('click', () => {
+      const name = dom.itemName.value.trim();
+      const price = safeNum(dom.itemPrice.value);
+      const year = safeNum(dom.itemYear.value, 1);
+      if (addItem(name, price, year)) {
+        dom.itemName.value = '';
+        dom.itemPrice.value = '';
+        dom.itemYear.value = '1';
+        dom.itemName.focus();
+      }
+    });
+
+    // 回车快捷添加
+    dom.itemName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $id('btnAddItem').click();
+    });
+    dom.itemPrice.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $id('btnAddItem').click();
+    });
+    dom.itemYear.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $id('btnAddItem').click();
+    });
+
+    // 购买决策计算
+    $id('btnCalc').addEventListener('click', calcDecision);
+    dom.price.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') calcDecision();
+    });
+    dom.buyYear.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') calcDecision();
+    });
+
+    // 撤销
+    $id('btnUndo').addEventListener('click', undo);
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    });
+
+    // 导出
+    $id('btnExport').addEventListener('click', exportData);
+
+    // 导入
+    $id('btnImport').addEventListener('click', () => dom.importFile.click());
+    dom.importFile.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        importData(e.target.files[0]);
+        e.target.value = ''; // 允许重复选择同一文件
+      }
+    });
+  }
+
+  function debounce(fn, delay) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  /* ============================================================
+     初始化
+     ============================================================ */
+  function init() {
+    loadState();
+    initTheme();
+    bindEvents();
+    renderAll();
+  }
+
+  // 启动
+  init();
+  </script>
+</body>
+</html>
